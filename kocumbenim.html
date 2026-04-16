@@ -134,6 +134,14 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
 .sec.ogün-sec .finput:focus{border-color:#c07020}
 .sec.ogün-sec .flabel{color:#a05010}
 
+
+.haftalik-btn{width:100%;background:var(--bg3);border:0.5px solid var(--border2);color:var(--accent2);font-size:13px;padding:13px;border-radius:var(--rs);cursor:pointer;font-family:'Instrument Sans',sans-serif;font-weight:500;transition:all 0.15s;margin-top:8px}
+.haftalik-btn:hover{border-color:rgba(240,200,74,0.4);background:rgba(240,200,74,0.05)}
+
+
+.aylik-btn{width:100%;background:var(--bg3);border:0.5px solid var(--border2);color:var(--accent3);font-size:13px;padding:13px;border-radius:var(--rs);cursor:pointer;font-family:'Instrument Sans',sans-serif;font-weight:500;transition:all 0.15s;margin-top:8px}
+.aylik-btn:hover{border-color:rgba(100,200,240,0.4);background:rgba(100,200,240,0.05)}
+
 .login-hint{font-size:11px;color:var(--muted);margin-top:24px;line-height:1.7}
 
 #app{display:none;min-height:100vh}
@@ -782,6 +790,197 @@ function showMotiv(){
 function nextMotiv(){motivIdx=(motivIdx+1)%MOTIVS.length;showMotiv()}
 function prevMotiv(){motivIdx=(motivIdx-1+MOTIVS.length)%MOTIVS.length;showMotiv()}
 
+
+
+
+function aylikOzet(){
+  var d=db();
+  var today=new Date();
+  var yil=today.getFullYear();
+  var ay=today.getMonth();
+  var months=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  var dayNames=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
+  var sonGun=new Date(yil,ay+1,0).getDate();
+
+  var toplamSu=0,suGun=0;
+  var toplamUyku=0,uykuGun=0;
+  var toplamKm=0,kosuGun=0;
+  var antSayac={};
+  var yarislar=[];
+  var toplamKahve=0,toplamCay=0;
+  var enIyiPace=null;
+  var kilo_ilk=null,kilo_son=null;
+
+  for(var i=1;i<=sonGun;i++){
+    var g=new Date(yil,ay,i);
+    var k=dkey(g);
+    var rec=d[k];
+    if(!rec)continue;
+    if(rec.water){toplamSu+=rec.water;suGun++}
+    if(rec.yatis&&rec.kalkis){
+      var ym=+rec.yatis.split(':')[0]*60+ +rec.yatis.split(':')[1];
+      var km2=+rec.kalkis.split(':')[0]*60+ +rec.kalkis.split(':')[1];
+      var diff=km2>ym?km2-ym:km2+1440-ym;
+      toplamUyku+=diff/60;uykuGun++;
+    }
+    if(rec['ant-tur']){
+      var tur=rec['ant-tur'];
+      antSayac[tur]=(antSayac[tur]||0)+1;
+      if(tur==='Koşu'||tur.indexOf('Koşu')>-1){
+        if(rec.mesafe){toplamKm+=parseFloat(rec.mesafe)||0;kosuGun++}
+        if(rec.pace&&(!enIyiPace||rec.pace<enIyiPace))enIyiPace=rec.pace;
+      }
+    }
+    if(rec['yaris-ad']||rec['yaris-mesafe']){
+      yarislar.push(i+' '+months[ay].slice(0,3)+': '+(rec['yaris-ad']||rec['yaris-mesafe'])+(rec['yaris-pace']?' — '+rec['yaris-pace']+'/km':'')+(rec['yaris-siralama']?' ('+rec['yaris-siralama']+')':''));
+    }
+    if(rec['kahve-adet'])toplamKahve+=parseInt(rec['kahve-adet'])||0;
+    if(rec['cay-adet'])toplamCay+=parseInt(rec['cay-adet'])||0;
+    if(rec['ol-kilo']){
+      if(kilo_ilk===null)kilo_ilk=parseFloat(rec['ol-kilo']);
+      kilo_son=parseFloat(rec['ol-kilo']);
+    }
+  }
+
+  var lines=[];
+  lines.push('=== AYLIK ÖZET ===');
+  lines.push(months[ay]+' '+yil);
+  lines.push('');
+  lines.push('SU');
+  lines.push('Toplam: '+toplamSu+' bardak ('+(toplamSu*0.25).toFixed(1)+' litre)');
+  if(suGun>0)lines.push('Günlük ortalama: '+(toplamSu/suGun).toFixed(1)+' bardak');
+  lines.push('');
+  lines.push('UYKU');
+  if(uykuGun>0){
+    lines.push('Toplam: '+toplamUyku.toFixed(1)+' saat ('+uykuGun+' gün)');
+    lines.push('Günlük ortalama: '+(toplamUyku/uykuGun).toFixed(1)+' saat');
+  } else lines.push('Veri yok');
+  lines.push('');
+  lines.push('HAREKET');
+  var antList=Object.keys(antSayac);
+  if(antList.length){
+    antList.forEach(function(t){lines.push(t+': '+antSayac[t]+' kez')});
+    if(toplamKm>0){
+      lines.push('Toplam koşu: '+toplamKm.toFixed(1)+' km');
+      if(kosuGun>0)lines.push('Koşu başına ort.: '+(toplamKm/kosuGun).toFixed(1)+' km');
+    }
+    if(enIyiPace)lines.push('En iyi pace: '+enIyiPace+' dk/km');
+  } else lines.push('Veri yok');
+  if(yarislar.length){
+    lines.push('');
+    lines.push('YARIŞLAR');
+    yarislar.forEach(function(y){lines.push(y)});
+  }
+  if(toplamKahve>0||toplamCay>0){
+    lines.push('');
+    lines.push('KAHVE & ÇAY');
+    if(toplamKahve>0)lines.push('Kahve: '+toplamKahve+' fincan');
+    if(toplamCay>0)lines.push('Çay: '+toplamCay+' bardak');
+  }
+  if(kilo_ilk!==null&&kilo_son!==null&&kilo_ilk!==kilo_son){
+    lines.push('');
+    lines.push('VÜCUT');
+    var fark=(kilo_son-kilo_ilk).toFixed(1);
+    lines.push('Kilo değişimi: '+(fark>0?'+':'')+fark+' kg ('+kilo_ilk+' → '+kilo_son+' kg)');
+  }
+  lines.push('');
+  lines.push('koçumbenim ile takip edildi.');
+
+  var txt=lines.join('\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){toast('Aylık özet kopyalandı!')}).catch(function(){fbCopy(txt)});
+  } else fbCopy(txt);
+}
+
+function haftalikOzet(){
+  var d=db();
+  var today=new Date();today.setHours(0,0,0,0);
+  var pazartesi=new Date(today);
+  var gun=today.getDay();
+  var fark=gun===0?6:gun-1;
+  pazartesi.setDate(today.getDate()-fark);
+
+  var gunler=[];
+  for(var i=0;i<7;i++){
+    var g=new Date(pazartesi);g.setDate(pazartesi.getDate()+i);
+    gunler.push(g);
+  }
+
+  var toplamSu=0,suGun=0;
+  var toplamUyku=0,uykuGun=0;
+  var toplamKm=0;
+  var antrenmanlar=[];
+  var yarislar=[];
+  var toplamKahve=0,toplamCay=0;
+  var dayNames=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+  var months=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+
+  gunler.forEach(function(g){
+    var k=dkey(g);
+    var rec=d[k];
+    if(!rec)return;
+    if(rec.water){toplamSu+=rec.water;suGun++}
+    if(rec.yatis&&rec.kalkis){
+      var ym=+rec.yatis.split(':')[0]*60+ +rec.yatis.split(':')[1];
+      var km=+rec.kalkis.split(':')[0]*60+ +rec.kalkis.split(':')[1];
+      var diff=km>ym?km-ym:km+1440-ym;
+      toplamUyku+=diff/60;uykuGun++;
+    }
+    if(rec['ant-tur']){
+      var ant=rec['ant-tur'];
+      if(rec.mesafe)toplamKm+=parseFloat(rec.mesafe)||0;
+      antrenmanlar.push(dayNames[g.getDay()]+': '+ant+(rec.mesafe?' '+rec.mesafe+'km':'')+(rec.pace?' @ '+rec.pace:''));
+    }
+    if(rec['yaris-ad']||rec['yaris-mesafe']){
+      yarislar.push(dayNames[g.getDay()]+': '+(rec['yaris-ad']||rec['yaris-mesafe']||'Yarış')+(rec['yaris-pace']?' — '+rec['yaris-pace']+'/km':''));
+    }
+    if(rec['kahve-adet'])toplamKahve+=parseInt(rec['kahve-adet'])||0;
+    if(rec['cay-adet'])toplamCay+=parseInt(rec['cay-adet'])||0;
+  });
+
+  var bas=pazartesi;
+  var bit=gunler[6];
+  var basStr=bas.getDate()+' '+months[bas.getMonth()];
+  var bitStr=bit.getDate()+' '+months[bit.getMonth()];
+
+  var lines=[];
+  lines.push('=== HAFTALIK ÖZET ===');
+  lines.push(basStr+' — '+bitStr);
+  lines.push('');
+  lines.push('SU');
+  lines.push('Toplam: '+toplamSu+' bardak ('+(toplamSu*250)+' ml)');
+  if(suGun>0)lines.push('Günlük ortalama: '+(toplamSu/suGun).toFixed(1)+' bardak');
+  lines.push('');
+  lines.push('UYKU');
+  if(uykuGun>0){
+    lines.push('Toplam: '+toplamUyku.toFixed(1)+' saat ('+uykuGun+' gün)');
+    lines.push('Günlük ortalama: '+(toplamUyku/uykuGun).toFixed(1)+' saat');
+  } else lines.push('Veri yok');
+  lines.push('');
+  lines.push('HAREKET');
+  if(antrenmanlar.length){
+    antrenmanlar.forEach(function(a){lines.push(a)});
+    if(toplamKm>0)lines.push('Toplam koşu: '+toplamKm.toFixed(1)+' km');
+  } else lines.push('Veri yok');
+  if(yarislar.length){
+    lines.push('');
+    lines.push('YARIŞ');
+    yarislar.forEach(function(y){lines.push(y)});
+  }
+  if(toplamKahve>0||toplamCay>0){
+    lines.push('');
+    lines.push('KAHVE & ÇAY');
+    if(toplamKahve>0)lines.push('Kahve: '+toplamKahve+' fincan');
+    if(toplamCay>0)lines.push('Çay: '+toplamCay+' bardak');
+  }
+  lines.push('');
+  lines.push('koçumbenim ile takip edildi.');
+
+  var txt=lines.join('\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){toast('Haftalık özet kopyalandı!')}).catch(function(){fbCopy(txt)});
+  } else fbCopy(txt);
+}
 
 function openSifreDegistir(){
   document.getElementById('sifre-mevcut').value='';
