@@ -70,6 +70,23 @@ html,body{height:100%;font-family:'Instrument Sans',sans-serif;background:var(--
 .sec.light-sec .olcum-input{background:#f0f8fd;border-color:rgba(100,180,220,0.3);color:#1a3a50}
 .sec.light-sec .olcum-input:focus{border-color:#5ab0d8}
 
+
+.sec.race-sec{background:#fce8f3;border-color:var(--pink-border)}
+.sec.race-sec .sec-head{background:#f8d4ec;border-bottom-color:var(--pink-border)}
+.sec.race-sec .sec-title{color:#8a1a5c}
+.sec.race-sec .sec-head:hover .sec-title{color:#5a0a3a}
+.sec.race-sec .finput{background:#fdf0f9;border-color:rgba(245,100,184,0.3);color:#5a1a40}
+.sec.race-sec .finput:focus{border-color:var(--pink)}
+.sec.race-sec .flabel{color:#a03070}
+.sec.race-sec .funit{color:#a03070}
+.sec.race-sec .sec-chevron{color:#a03070}
+.sec.water-sec{background:#e8f4fb;border-color:rgba(100,180,220,0.25)}
+.sec.water-sec .sec-head{background:#daeef8;border-bottom-color:rgba(100,180,220,0.2)}
+.sec.water-sec .sec-title{color:#2a6080}
+.sec.water-sec .sec-head:hover .sec-title{color:#1a4060}
+.sec.water-sec .sec-chevron{color:#4a85a0}
+.sec.water-sec .wlabel{color:#4a85a0}
+
 .login-hint{font-size:11px;color:var(--muted);margin-top:24px;line-height:1.7}
 
 #app{display:none;min-height:100vh}
@@ -231,7 +248,7 @@ textarea.finput{resize:none;line-height:1.5}
     </div>
 
     <!-- SU -->
-    <div class="sec">
+    <div class="sec water-sec">
       <div class="sec-head" onclick="toggleSec(this)">
         <div class="sec-dot" style="background:#93d4f5"></div>
         <span class="sec-title">Su</span>
